@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -19,60 +20,43 @@ namespace prj37288_Validacoes
         #region Botão Validar
         private void btnValidar_Click(object sender, EventArgs e)
         {
-            if (String.IsNullOrEmpty(cmbDocumento.SelectedItem.ToString()))
+            if (cmbDocumento.SelectedItem == null || String.IsNullOrEmpty(cmbDocumento.SelectedItem.ToString()))
             {
-                MessageBox.Show($"Selecione um tipo de documento antes de tentar a validação!", "ERRO", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Selecione um tipo de documento antes de tentar a validação!", "ERRO", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
             string tipoDocumento = cmbDocumento.SelectedItem.ToString();
-            string numeroDocumento =
-                txtNumero.Text.Replace(",", "").Replace(".", "").Replace("-", "").Replace(" ", "").Replace("/", "").Replace("_", "").Replace(" ", "");
+            string numeroDocumento = txtNumero.Text
+                .Replace(",", "").Replace(".", "").Replace("-", "")
+                .Replace(" ", "").Replace("/", "").Replace("_", "").Replace(" ", "");
 
             if (String.IsNullOrEmpty(numeroDocumento))
             {
-                MessageBox.Show($"Digite um número de {cmbDocumento.SelectedItem.ToString()} na entrada!", "ERRO", MessageBoxButtons.OK,MessageBoxIcon.Error);
+                MessageBox.Show($"Digite um número de {tipoDocumento} na entrada!", "ERRO", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            bool validez;
-            cls37288_Validacoes validacoes = new cls37288_Validacoes();
+            Validacoes validacoes = new Validacoes();
 
-            if (tipoDocumento == "Cartão de Crédito (CC)")
+            var validadores = new Dictionary<string, Func<string, bool>>()
             {
-                validez = validacoes.ValidarCC(numeroDocumento);
-            }
-            else if (tipoDocumento == "Cadastro Pessoa Física (CPF)")
-            {
-                validez = validacoes.ValidarCPF(numeroDocumento);
-            }
-            else if (tipoDocumento == "Registro Geral (RG)")
-            {
-                validez = validacoes.ValidarRG(numeroDocumento);
-            }
-            else if (tipoDocumento == "Carteira Nacional de Habilitação (CNH)")
-            {
-                validez = validacoes.ValidarCNH(numeroDocumento);
-            }
-            else if (tipoDocumento == "PIS-PASEP")
-            {
-                validez = validacoes.ValidarPISPASEP(numeroDocumento);
-            }
-            else if (tipoDocumento == "Cadastro Nacional Pessoa Jurídica (CNPJ)")
-            {
-                validez = validacoes.ValidarCNPJ(numeroDocumento);
-            }
-            else if (tipoDocumento == "Título de Eleitor (TE)")
-            {
-                if (numeroDocumento.Length == 11)
-                    txtNumero.Text = txtNumero.Text.Replace(" ", "").PadLeft(12, '0');
+                { "Cartão de Crédito (CC)", validacoes.ValidarCC },
+                { "Cadastro Pessoa Física (CPF)", validacoes.ValidarCPF },
+                { "Registro Geral (RG)", validacoes.ValidarRG },
+                { "Carteira Nacional de Habilitação (CNH)", validacoes.ValidarCNH },
+                { "PIS-PASEP", validacoes.ValidarPISPASEP },
+                { "Cadastro Nacional Pessoa Jurídica (CNPJ)", validacoes.ValidarCNPJ },
+                { "Título de Eleitor (TE)", num =>
+                    {
+                        if (num.Length == 11)
+                            num = num.PadLeft(12, '0');
+                        return validacoes.ValidarTE(num);
+                    }
+                }
+            };
 
-                validez = validacoes.ValidarTE(txtNumero.Text);
-            }
-            else
-            {
-                validez = false;
-            }
+            bool validez = validadores.TryGetValue(tipoDocumento, out Func<string, bool> validar) ? validar(numeroDocumento) : false;
 
             lblSituacao.Text = validez ? "Válido" : "Inválido";
             lblSituacao.ForeColor = validez ? Color.Green : Color.Red;
@@ -86,53 +70,32 @@ namespace prj37288_Validacoes
             lblSituacao.Text = "";
             txtNumero.Focus();
 
-            int maxLength;
+            if (cmbDocumento.SelectedItem == null)
+                return;
+
             string tipoDocumento = cmbDocumento.SelectedItem.ToString();
 
-            string mask = "";
+            var formatos = new Dictionary<string, (int maxLength, string mask)>
+            {
+                { "Cartão de Crédito (CC)", (16, "0000 0000 0000 0000") },
+                { "Cadastro Pessoa Física (CPF)", (11, "000,000,000-00") },
+                { "Registro Geral (RG)", (9, "00,000,000-0") },
+                { "Carteira Nacional de Habilitação (CNH)", (11, "00000000000") },
+                { "PIS-PASEP", (11, "000,00000,00-0") },
+                { "Cadastro Nacional Pessoa Jurídica (CNPJ)", (14, "00,000,000/0000-00") },
+                { "Título de Eleitor (TE)", (12, "0000 0000 0000") }
+            };
 
-            if (tipoDocumento == "Cartão de Crédito (CC)")
+            if (formatos.TryGetValue(tipoDocumento, out var config))
             {
-                maxLength = 16;
-                mask = "0000 0000 0000 0000";
-            }
-            else if (tipoDocumento == "Cadastro Pessoa Física (CPF)")
-            {
-                maxLength = 11;
-                mask = "000,000,000-00";
-            }
-            else if (tipoDocumento == "Registro Geral (RG)")
-            {
-                maxLength = 9;
-                mask = "00,000,000-0";
-            }
-            else if (tipoDocumento == "Carteira Nacional de Habilitação (CNH)")
-            {
-                maxLength = 11;
-                mask = "00000000000";
-            }
-            else if (tipoDocumento == "PIS-PASEP")
-            {
-                maxLength = 11;
-                mask = "000,00000,00-0";
-            }
-            else if (tipoDocumento == "Cadastro Nacional Pessoa Jurídica (CNPJ)")
-            {
-                maxLength = 14;
-                mask = "00,000,000/0000-00";
-            }
-            else if (tipoDocumento == "Título de Eleitor (TE)")
-            {
-                maxLength = 12;
-                mask = "0000 0000 0000";
+                txtNumero.MaxLength = config.maxLength;
+                txtNumero.Mask = config.mask;
             }
             else
             {
-                maxLength = 0;
+                txtNumero.MaxLength = 0;
+                txtNumero.Mask = "";
             }
-
-            txtNumero.Mask = mask;
-            txtNumero.MaxLength = maxLength;
         }
         #endregion
 
