@@ -25,11 +25,10 @@ Este projeto é uma aplicação Windows Forms desenvolvida em C# que permite a v
 
 1. Clone o repositório:
    ```sh
-   git clone https://github.com/seu-usuario/validador-documentos-winforms.git
+   git clone https://github.com/gabrielflorencco/ValidadorDocumentos.git
    ```
-2. Abra o projeto no Visual Studio.
-3. Compile e execute a aplicação.
-4. Insira um documento e clique em "Validar".
+2. Abra a pasta "Setup", e execute o instalador "prj37288_SetupValidacoes.msi";
+3. Execute o aplicativo, escolha o tipo do documento, insira o número do documento e clique em "Validar".
 
 ## 📝 Licença
 
